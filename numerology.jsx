@@ -1,0 +1,437 @@
+import { useState } from "react";
+
+const LETTER_VALUES = {
+  A:1,B:2,C:3,D:4,E:5,F:6,G:7,H:8,I:9,
+  J:1,K:2,L:3,M:4,N:5,O:6,P:7,Q:8,R:9,
+  S:1,T:2,U:3,V:4,W:5,X:6,Y:7,Z:8
+};
+const VOWELS = new Set(["A","E","I","O","U"]);
+
+function reduceNumber(n) {
+  while (n > 9 && n !== 11 && n !== 22 && n !== 33) {
+    n = String(n).split("").reduce((a,d) => a + parseInt(d), 0);
+  }
+  return n;
+}
+function sumDigits(str) {
+  return str.split("").reduce((a,d) => a + (parseInt(d)||0), 0);
+}
+function calcLifePath(dob) {
+  const d = dob.replace(/\D/g,"");
+  if(d.length!==8) return null;
+  const t = sumDigits(d);
+  return {raw:t, reduced:reduceNumber(t)};
+}
+function calcBirthday(dob) {
+  const d = dob.replace(/\D/g,"");
+  if(d.length!==8) return null;
+  const day = parseInt(d.slice(6,8));
+  return {raw:day, reduced:reduceNumber(day)};
+}
+function calcDestiny(name) {
+  const u = name.toUpperCase().replace(/[^A-Z]/g,"");
+  if(!u) return null;
+  const t = u.split("").reduce((a,c) => a+(LETTER_VALUES[c]||0),0);
+  return {raw:t, reduced:reduceNumber(t)};
+}
+function calcSoul(name) {
+  const u = name.toUpperCase().replace(/[^A-Z]/g,"");
+  const v = u.split("").filter(c=>VOWELS.has(c));
+  if(!v.length) return null;
+  const t = v.reduce((a,c)=>a+(LETTER_VALUES[c]||0),0);
+  return {raw:t, reduced:reduceNumber(t)};
+}
+function calcPersonality(name) {
+  const u = name.toUpperCase().replace(/[^A-Z]/g,"");
+  const c2 = u.split("").filter(c=>!VOWELS.has(c));
+  if(!c2.length) return null;
+  const t = c2.reduce((a,c)=>a+(LETTER_VALUES[c]||0),0);
+  return {raw:t, reduced:reduceNumber(t)};
+}
+function calcMaturity(lp, ds) {
+  if(!lp||!ds) return null;
+  const t = lp.reduced + ds.reduced;
+  return {raw:t, reduced:reduceNumber(t)};
+}
+function calcPersonalYear(dob, yr) {
+  const d = dob.replace(/\D/g,"");
+  if(d.length!==8) return null;
+  const mmdd = d.slice(4,8);
+  const t = sumDigits(mmdd)+sumDigits(String(yr));
+  return {raw:t, reduced:reduceNumber(t)};
+}
+function calcAttitude(dob) {
+  const d = dob.replace(/\D/g,"");
+  if(d.length!==8) return null;
+  const mmdd = d.slice(4,8);
+  const t = sumDigits(mmdd);
+  return {raw:t, reduced:reduceNumber(t)};
+}
+
+const LIFE_PATH = {
+  1:{title:"リーダー・開拓者",keyword:"独立 / 創始 / 意志",desc:"1はすべての数の始まりであり、独立・創造・リーダーシップを象徴します。あなたは自らの道を切り開く使命を持ち、群れに従うよりも先頭に立つことで本領を発揮します。強い意志と行動力、独自のアイデアで新しい分野を開拓する力があります。人生で繰り返し「自分で決断する」「自立する」というテーマが訪れるでしょう。依存や他者への追随は魂の成長を妨げます。自己信頼を深め、自らの直感を信じることが最大の課題であり、喜びでもあります。",strength:"強い意志・行動力・独創性・決断力・パイオニア精神",shadow:"頑固・自己中心的・孤立しやすい・他者の意見を聞けない",love:"恋愛では主導権を持ちたがる傾向。相手を引っ張るリードが魅力になる一方、対等なパートナーシップを意識することが大切。束縛を嫌い、自由と自立を尊重し合える関係が理想。",money:"独立・起業・新規開拓で財を築く。人の下で働くよりも自分でビジネスを持つほうが向いている。スタートダッシュの強さは抜群だが、持続力と管理が課題。",career:"起業家・経営者・プロデューサー・スポーツ選手・政治家・発明家",growth:"他者の意見にも耳を傾け、チームワークを学ぶことで真のリーダーへと成長する。"},
+  2:{title:"協調者・仲介者",keyword:"調和 / 感受性 / 協力",desc:"2は陰陽のバランス、二極の調和を象徴する数。あなたは生まれながらの外交官であり、対立する二つの間に立ち、橋渡しをする天才です。繊細な感受性と高い共感力で、相手の気持ちをすぐに読み取ることができます。表舞台よりも裏方として力を発揮することも多く、縁の下の力持ちとして組織を支えます。直感力が非常に鋭く、言葉にならない「雰囲気」や「流れ」を感じ取る能力があります。",strength:"共感力・協調性・外交力・直感力・忍耐力・細やかな気配り",shadow:"優柔不断・過度な依存・自己主張が弱い・傷つきやすい",love:"深い愛情と헌신的なパートナーシップを求める。相手を支えることに喜びを感じるが、尽くしすぎて消耗することも。自分の気持ちも大切にするバランスが鍵。",money:"コツコツ型で安定志向。リスクより安定を好む。パートナーとの共同事業が向いている。",career:"カウンセラー・外交官・調停者・音楽家・看護師・秘書・心理士",growth:"「NO」と言う練習をし、自分の境界線を持つことで、真の調和と自立を両立させる。"},
+  3:{title:"表現者・創造者",keyword:"表現 / 喜び / 創造",desc:"3は三位一体を象徴し、創造と喜びのエネルギーを持つ数です。あなたは言葉・芸術・ユーモアを通じて人々の心に光をともす役割があります。コミュニケーション能力が高く、どんな場でも空気を明るくする力があります。アイデアが次々と湧き出る創造的な頭脳を持ち、自己表現することで魂が輝きます。反面、エネルギーが分散しやすく、一つのことに集中し続けることが課題です。",strength:"表現力・創造性・ユーモア・社交性・楽観主義・コミュニケーション能力",shadow:"散漫・飽きっぽい・感情の起伏が激しい・表面的になりやすい",love:"明るく楽しい恋愛を求める。笑いのある関係が大切で、重い雰囲気が苦手。愛情表現が豊かで相手を喜ばせる天才。",money:"才能を売る仕事でお金を得る。副業や創作活動からの収入も多い。計画的な貯蓄が課題。",career:"作家・芸術家・俳優・コメディアン・デザイナー・教師・スピーカー・ミュージシャン",growth:"一つのことを深めることで、表面的な表現から魂レベルの創造へと昇華する。"},
+  4:{title:"建設者・実務家",keyword:"安定 / 勤勉 / 基盤",desc:"4は四方位・四季・四元素を象徴し、安定と秩序を司る数です。あなたは社会や家族の「基盤」を築く使命を持ち、地道な努力と誠実さで信頼を積み上げます。計画性と組織力に優れ、言ったことを必ず実行する責任感の強さが際立ちます。地道な積み重ねが最終的に大きな果実となります。変化や予測不能な状況に対するストレス耐性を養うことが人生の大きな課題です。",strength:"勤勉・誠実・組織力・計画性・責任感・信頼性・忍耐力",shadow:"頑固・融通が利かない・変化への抵抗・ワーカホリック",love:"安定した長期的な関係を求める。派手さよりも誠実さと信頼を重視。ゆっくりと関係を築くタイプ。",money:"コツコツ型で堅実な財形が得意。不動産・長期投資など安定志向が向いている。",career:"エンジニア・建築家・会計士・医師・管理職・農業・製造業・システム開発",growth:"「完璧でなくてもいい」という柔軟さを身につけることで、堅固な人生に豊かさが加わる。"},
+  5:{title:"自由人・冒険者",keyword:"自由 / 変化 / 多様性",desc:"5は五感と人間の自由意志を象徴する数。あなたは変化・冒険・多様な経験を通じて成長する魂です。好奇心旺盛で飽きることを知らず、常に新しいことへと向かうエネルギーを持ちます。適応力と臨機応変な判断力に優れ、どんな環境でも生き抜く力があります。真の自由とは「規律の中にある自由」であることを学ぶことが成長の鍵です。",strength:"適応力・コミュニケーション力・行動力・多才・好奇心・柔軟性",shadow:"無責任・刺激中毒・落ち着きのなさ・物事を中途半端にしやすい",love:"束縛を嫌い、自由を大切にするパートナーシップを求める。相手にも自由を与えられる関係が長続きの秘訣。",money:"波のある収入パターン。多方面に収入源を持つのが向いている。ギャンブルや投機には要注意。",career:"旅行業・ジャーナリスト・マーケター・営業・フリーランス・通訳・起業家",growth:"「やり遂げる力」を養うことで、無限の可能性が具体的な果実へと変わる。"},
+  6:{title:"奉仕者・癒し手",keyword:"愛情 / 責任 / 奉仕",desc:"6は完全性と美を象徴する数。愛・調和・奉仕のエネルギーを持ち、家族やコミュニティを守る「癒し手」として輝きます。責任感が強く、周囲の人が困っていると放っておけない性質を持ちます。美的センスが高く、環境を美しく整える才能があります。「与えすぎる」傾向があり、自己犠牲に陥りやすいことが最大の課題。",strength:"愛情深さ・責任感・美的センス・癒しの力・誠実さ・包容力",shadow:"過干渉・自己犠牲・完璧主義・世話を焼きすぎる",love:"愛情深くヘキシン的なパートナー。家族を大切にし、安定した家庭を築くことに喜びを感じる。",money:"奉仕職や福祉・美容・教育など「人の役に立つ仕事」でお金の流れが良くなる。",career:"医師・看護師・教師・保育士・カウンセラー・デザイナー・料理人",growth:"「自分を愛することが、他者を愛する土台」という真理を体現することで魂が輝く。"},
+  7:{title:"探求者・哲人",keyword:"真実 / 知恵 / 内省",desc:"7はすべての数の中で最もスピリチュアルで神秘的な数です。真実・知識・精神的洞察を追い求める「孤高の探求者」として生きる魂です。深い分析力と直感力を兼ね備え、物事の表面ではなく本質を見抜く力があります。孤独を好み、一人の時間が充電タイムとなります。「信頼と開示」が人生の大きなテーマとなります。",strength:"分析力・直感力・知性・精神性・洞察力・集中力・独創的思考",shadow:"孤立・冷淡に見られる・懐疑心・感情表現が苦手",love:"深く信頼できる相手とでなければ心を開けない。魂レベルで繋がれるパートナーを求める。精神的な会話ができる相手が理想。",money:"お金よりも「知識・真実・時間」に価値を置く。専門性を活かした仕事で安定した収入を得る。",career:"研究者・哲学者・占い師・心理士・作家・科学者・ITエンジニア",growth:"「完全に理解できなくても信頼する」という感覚を育てることで、孤高から繋がりへと開いていく。"},
+  8:{title:"達成者・権力者",keyword:"成功 / 財力 / 権力",desc:"8は無限大（∞）を縦にした形で、物質世界と精神世界の均衡を象徴します。強大な意志と実行力でビジネスや社会的地位において大きな成果を上げる力を持ちます。お金・権力・影響力の流れを読む天性の才能があります。「因果応報」の法則と深く結びついており、与えたものが倍になって返ってくる経験を多くします。",strength:"決断力・統率力・経営センス・財力・意志の強さ・実行力・戦略的思考",shadow:"権威主義・支配欲・物質主義・傲慢・燃え尽き",love:"強さとパッションのある関係を求める。仕事への情熱が強すぎてパートナーとの時間が後回しになることが課題。",money:"8はすべての数の中で最もお金に縁のある数字。大きな規模で動かすことで本領発揮。",career:"実業家・投資家・経営幹部・不動産業・政治家・銀行家・プロデューサー",growth:"「力は支配のためでなく、奉仕のためにある」という真理を知ることで、真の豊かさを手にする。"},
+  9:{title:"博愛者・完成者",keyword:"博愛 / 完成 / 手放し",desc:"9は1〜9のすべての数を内包する「完成」の数です。人類全体への愛と奉仕を使命とし、個人の利益を超えた大きな視野で生きる博愛の魂です。豊かな感受性・共感力・芸術的センスを持ち、多くの人の心に深く響く力があります。9は「終わりと始まり」を象徴し、古いものを手放すことで新しいサイクルへ進む力を学びます。",strength:"博愛・共感力・芸術性・寛大さ・慈悲・精神的成熟・大局を見る力",shadow:"感情的・自己否定・執着・自己犠牲・失望しやすい",love:"深く愛することができるが、理想が高すぎて現実のパートナーに失望することも。愛を「条件なく与える」ことと、自分の気持ちを伝えることのバランスが大切。",money:"お金は「循環するもの」という感覚を持つ。「お金より使命」という意識が強すぎると経済的に苦しむことも。",career:"社会活動家・芸術家・宗教家・医師・教師・慈善事業・国際支援・作家",growth:"「手放すことで満たされる」という逆説を生きることで、完成した魂の豊かさを体験する。"},
+  11:{title:"マスター11・直感の使者",keyword:"直感 / インスピレーション / 精神性",desc:"11はマスターナンバーの最初であり、高次の直感とスピリチュアルな洞察力を持つ特別な魂です。通常の感覚を超えた「第六感」が働き、言葉にならないインスピレーションで人々を導きます。光と影の二極を内包しており、極めて高い感受性の裏側に深いナイーブさや神経過敏も持ち合わせています。",strength:"超直感力・インスピレーション・精神的洞察力・カリスマ性・芸術的感性",shadow:"神経過敏・現実逃避・強いプレッシャー感・精神的不安定",love:"魂の深いところで繋がれる関係を求める。相手の内面を鋭く感じ取るため、嘘やごまかしにすぐ気づく。",money:"インスピレーションを形にする仕事でお金が流れやすい。精神性と物質のバランスを学ぶことが大切。",career:"精神的指導者・アーティスト・発明家・カウンセラー・占い師・哲学者・教師",growth:"「高次のビジョンを地に足ついた形で体現すること」がテーマ。グラウンディングが最重要課題。"},
+  22:{title:"マスター22・夢の建築家",keyword:"ビジョン / 現実化 / 偉大な建設",desc:"22はすべてのマスターナンバーの中で最も実践的な力を持ち、「夢の建築家」と呼ばれます。壮大なビジョンを実際の形に落とし込む能力において、すべての数字の中で最強です。4の実務的エネルギーと11の高次ビジョンを兼ね備えており、理想と現実を融合させる稀有な資質を持ちます。",strength:"壮大なビジョン・実現力・組織構築・統率力・戦略的思考",shadow:"過大なプレッシャー・完璧主義・燃え尽き・自分への過度な期待",love:"強力なパートナーシップを求め、人生の大きなビジョンを共に歩める相手が理想。",money:"大きな富を動かすポテンシャルを持つ。社会貢献と個人の豊かさを両立させることが理想。",career:"大企業経営者・政治家・建築家・社会変革者・国際的プロジェクトリーダー",growth:"「完璧な計画よりも、動きながら修正すること」を学ぶことで、無限のビジョンが現実となる。"},
+  33:{title:"マスター33・宇宙の教師",keyword:"無条件の愛 / 癒し / 精神的指導",desc:"33はすべてのマスターナンバーの頂点であり、「宇宙の教師」または「マスターヒーラー」と呼ばれる至高の数字です。純粋な愛と奉仕の精神で人類の精神的進化を導く使命を持ちます。非常にまれな使命数であり、この数を持つ人は人生のどこかで「自分よりも大きなものへの奉仕」を選択する経験をします。",strength:"無条件の愛・癒しの力・精神的指導力・深い知恵・慈悲",shadow:"自己犠牲の過剰・現実との乖離・重すぎる使命感",love:"深い無条件の愛を与えられるが、愛しすぎて自分を失うことも。相互尊重のある関係が不可欠。",money:"物質より精神を重視するが、豊かさを受け取ることも使命の一部として学ぶ必要がある。",career:"精神的指導者・治癒者・芸術家・人道支援活動家・教師・瞑想指導者",growth:"「自分自身を癒すことが、最大の奉仕」という真理を体現することが最終的な使命。"},
+};
+
+const BIRTHDAY_DETAIL = {
+  1:{title:"独立心と先駆者の才",desc:"自分で道を切り開く強い意志と独創性。最初の一歩を踏み出す勇気が際立ち、独自のペースで物事を進める才能がある。"},
+  2:{title:"調和と直感の才",desc:"繊細な感受性と人の気持ちを読む力。二人の間に橋を架ける天才であり、場の空気を読む能力が卓越している。"},
+  3:{title:"表現と創造の才",desc:"言葉・芸術・ユーモアで人を喜ばせる表現力。アイデアが次々と湧き出る創造的な才能を持つ。"},
+  4:{title:"勤勉と構築の才",desc:"地道な努力で確実に結果を出す力。信頼と安定を築くことが得意で、長期的な基盤作りに才能がある。"},
+  5:{title:"変化への適応と自由の才",desc:"どんな環境にも素早く適応する力。多様な才能と旺盛な好奇心を持ち、変化の中でこそ輝く。"},
+  6:{title:"愛情と責任の才",desc:"人を助け、支える天性の資質。美的センスと癒しの力を持ち、周囲に安心感を与える。"},
+  7:{title:"分析と探求の才",desc:"物事の本質を見抜く深い洞察力。学術・精神世界での卓越した集中力と探求心がある。"},
+  8:{title:"リーダーシップと財の才",desc:"大きな組織を動かす力と経営センス。目標達成への揺るぎない意志と実行力が強み。"},
+  9:{title:"博愛と芸術の才",desc:"人類全体への愛と芸術的センス。深い共感力と完成に向かうエネルギーを持つ。"},
+  10:{title:"創造的リーダーシップ",desc:"1（独立）と0（可能性）が合わさり、無限の可能性を持ったリーダーの素質。独創的なビジョンで人々を引っ張る。"},
+  11:{title:"スピリチュアルな直感（マスター）",desc:"超常的な直感力と高い感受性。インスピレーションで人々を導く特別な才能を持つマスターナンバー。"},
+  12:{title:"社交と表現の才",desc:"明るさと社交性で場を盛り上げる力。表現と協調のバランスが際立ち、チームをまとめる才がある。"},
+  13:{title:"勤勉さと変革の意志",desc:"コツコツとした努力に変革のエネルギーが加わった強さ。困難を乗り越え、新しいものを創り出す力。"},
+  14:{title:"自由と秩序のバランス",desc:"自由を求めながらも秩序を守る感覚。変化と安定を両立させる才能を持ち、柔軟さと責任感が共存する。"},
+  15:{title:"愛情と責任の融合",desc:"愛情深さと強い責任感が合わさった人格。人を守り育てる力が強く、家族やチームの中心になる。"},
+  16:{title:"内省と知性の深化",desc:"深く内側を掘り下げる力と鋭い知性。精神的な探求で輝く才能を持ち、独自の哲学を育む。"},
+  17:{title:"財と実行力の融合",desc:"お金の流れを読む力と強い意志が融合。長期的な成功を引き寄せる能力と粘り強さが強み。"},
+  18:{title:"博愛と現実のバランス",desc:"大きな愛を持ちながら現実にしっかり根を張る力。社会的影響力を持ち、理想と実践を両立させる。"},
+  19:{title:"独立と統合の融合",desc:"強い独立心の中に深い人間理解がある。一つのサイクルを完成させる力と、再スタートする勇気。"},
+  20:{title:"感受性と外交の才",desc:"繊細な感受性と卓越した外交力。人の気持ちを読んで場を調整する力が際立つ。"},
+  21:{title:"表現力とリーダーシップ",desc:"創造的表現力とリーダーシップが合わさった稀有な才能。人を引っ張る力と表現の美しさが共存する。"},
+  22:{title:"夢を現実化する力（マスター）",desc:"壮大なビジョンを現実に落とし込む力。マスタービルダーの才能を持ち、社会に大きな影響を与える。"},
+  23:{title:"コミュニケーションの天才",desc:"誰とでも自然に打ち解ける力と多才さ。変化の中でも軽やかに対応でき、人と人をつなぐ才がある。"},
+  24:{title:"愛と奉仕の実践者",desc:"愛情と責任感が安定した形で表れる。家族やコミュニティの柱となり、地に足ついた愛を実践する。"},
+  25:{title:"直感と分析の融合",desc:"鋭い直感と深い分析力が合わさった稀有な資質。真実を見抜く力が強く、独自の洞察を持つ。"},
+  26:{title:"財と愛情の融合",desc:"愛情深さとビジネスセンスが合わさった力。人のために豊かさを生み出す才能がある。"},
+  27:{title:"知性と博愛の融合",desc:"深い知性と広い愛が融合した人格。知恵で人類に貢献する使命を持ち、精神的成熟が早い。"},
+  28:{title:"意志と協調の融合",desc:"強いリーダーシップと協調性が共存する。チームを率いながら和を保つ稀有な力を持つ。"},
+  29:{title:"直感と博愛の融合",desc:"高次の直感と深い愛が合わさった特別な才能。精神的な使命を持ち、多くの人に影響を与える。"},
+  30:{title:"創造と表現の集大成",desc:"3の表現力が完成形として現れる。創造活動で多くの人を喜ばせ、芸術的な影響力を持つ。"},
+  31:{title:"建設と表現の融合",desc:"実務的な建設力と創造的表現力が合わさった力。形ある美しいものを作り出す才能がある。"},
+};
+
+const SOUL_DETAIL = {
+  1:{title:"自由と独立を求める魂",desc:"魂の奥底で「誰にも縛られず、自分の道を行きたい」という強い衝動がある。人に従うより自分でリードしたいという欲求が常にある。この欲求が満たされないと強いストレスを感じる。"},
+  2:{title:"愛と調和を求める魂",desc:"深いところで「愛されたい・受け入れられたい・安心したい」という欲求がある。孤独や対立が魂を消耗させる。調和のある環境と深い繋がりが魂の栄養となる。"},
+  3:{title:"表現と喜びを求める魂",desc:"魂が「表現したい・楽しみたい・創りたい」と叫んでいる。自己表現を抑圧されると生きる喜びを失う。笑い・芸術・創造が魂の糧。"},
+  4:{title:"安定と秩序を求める魂",desc:"魂の根底に「安全でいたい・確かなものが欲しい」という欲求がある。不安定な環境は魂を消耗させる。確固たる基盤と規則正しい生活が魂を満たす。"},
+  5:{title:"自由と冒険を求める魂",desc:"魂が常に「もっと自由に・もっと多様に・もっと広く」と求めている。制限・単調さ・ルーティンが魂を窒息させる。変化と冒険が魂のエネルギー源。"},
+  6:{title:"愛情と美を求める魂",desc:"魂が「愛したい・美しいものに囲まれたい・家族を守りたい」と求めている。醜さや不和が魂を傷つける。愛情に満ちた環境と美しさが魂の栄養。"},
+  7:{title:"真実と知恵を求める魂",desc:"魂の深いところで「本当のことが知りたい・本質を理解したい」という渇望がある。表面的な会話や嘘に魂が拒否反応を示す。深い知識と静寂が魂を満たす。"},
+  8:{title:"成功と豊かさを求める魂",desc:"魂が「達成したい・影響力を持ちたい・豊かでありたい」と求めている。力のない状況が魂を苦しめる。大きな目標と成果が魂の喜び。"},
+  9:{title:"博愛と完成を求める魂",desc:"魂が「すべての人を愛したい・完全でありたい・解放されたい」と求めている。不公平・不完全さ・執着が魂を苦しめる。奉仕と解放が魂の成就。"},
+  11:{title:"インスピレーションを求める魂",desc:"魂が高次の啓示・美・真理を渇望している。平凡さに魂が飢える。スピリチュアルな探求と創造が魂の核心的欲求。"},
+  22:{title:"偉大な達成を求める魂",desc:"魂が壮大なビジョンの実現を求めている。小さな目標では満足できない。世界を変えるスケールの使命が魂の真の欲求。"},
+  33:{title:"純粋な愛と奉仕を求める魂",desc:"魂が純粋な愛の体現を求めている。条件のない愛を与え、癒すことに魂の喜びがある。"},
+};
+
+const PERSONALITY_DETAIL = {
+  1:{title:"自信に満ちたリーダーの印象",desc:"初対面でも堂々としており、自然とリーダー的存在に見られる。積極的で決断力があるように映る。どんな場でも存在感を放つ。"},
+  2:{title:"温かく穏やかな印象",desc:"穏やかで安心感を与える雰囲気。話しやすく、すぐに打ち解けられると思われる。信頼を集めやすい外見的印象を持つ。"},
+  3:{title:"明るく楽しいオーラ",desc:"いつも笑顔で楽しそうな雰囲気。一緒にいると楽しそうと直感的に思わせる。人気者に見られることが多く、自然と人が集まる。"},
+  4:{title:"真面目で誠実な印象",desc:"しっかりしていて頼れる雰囲気。真剣で責任感がありそうに見られる。軽率なイメージとは無縁で、長期的な信頼を得やすい。"},
+  5:{title:"自由奔放でエネルギッシュな印象",desc:"活き活きとしたエネルギーが周囲に伝わる。冒険的で面白そうな人という印象を与える。話すだけで周りが楽しくなる。"},
+  6:{title:"優しく包容力のある印象",desc:"温かみと優しさが滲み出る雰囲気。自然と「頼りたい」「甘えたい」という気持ちを引き出す。誰にでも分け隔てなく接する印象。"},
+  7:{title:"知的で神秘的な印象",desc:"クールで知的なオーラ。少し近づきがたい雰囲気があるが、それが独特の魅力となる。謎めいた存在感が人を惹きつける。"},
+  8:{title:"パワフルで有能なオーラ",desc:"圧倒的な存在感と自信。一目で「できる人」と感じさせるオーラを持つ。威圧感を与えることもあるが、それが信頼や尊敬にもつながる。"},
+  9:{title:"品格と寛大さのある印象",desc:"大人びた品のある雰囲気。懐が深く、誰にでも優しい印象を与える。自然と人が慕ってくる成熟した雰囲気を持つ。"},
+  11:{title:"カリスマ的で神秘的なオーラ",desc:"普通ではない特別な雰囲気を放つ。近寄りがたくもあるが、強烈な引力がある。霊的な印象を与え、人々を惹きつける。"},
+  22:{title:"威厳と実力を兼ね備えた印象",desc:"圧倒的なスケール感と信頼感。大物感が漂い、初対面から尊敬を集めやすい。話すだけで場の空気が変わる。"},
+  33:{title:"慈愛と知恵に満ちた印象",desc:"母性的・父性的な深い愛情が滲み出る。会うだけで癒されると感じさせる特別なオーラを持つ。"},
+};
+
+const DESTINY_DETAIL = {
+  1:{title:"独立した道を切り開く使命",desc:"自分だけの道を創造し、他者の先頭に立つ使命。誰もやっていないことへの挑戦が人生を輝かせる。「一番最初」になることに意味がある。"},
+  2:{title:"協力と調和をもたらす使命",desc:"対立する人々の間に立ち、平和と調和を実現する使命。縁の下の力持ちとして世界を支える役割を担う。"},
+  3:{title:"表現と喜びを広める使命",desc:"才能ある表現を通じて人々に喜び・笑い・インスピレーションをもたらす使命。美と創造で世界を豊かにする。"},
+  4:{title:"社会の基盤を築く使命",desc:"安定した土台を社会や組織に提供する使命。地道な努力と誠実さで確かなものを作り上げる。"},
+  5:{title:"自由と変化をもたらす使命",desc:"固まった価値観や社会に新鮮な風を吹き込む使命。人々に自由と多様性の価値を示す役割がある。"},
+  6:{title:"愛と美を実践する使命",desc:"愛情と奉仕によって周囲の人を癒し、美しい環境を作り出す使命。家族・コミュニティの柱となる。"},
+  7:{title:"真実と知恵を探求する使命",desc:"深い探求によって真理を発見し、世界に知恵をもたらす使命。内面の旅が外の世界を豊かにする。"},
+  8:{title:"豊かさと達成を体現する使命",desc:"物質的・精神的豊かさを体現し、その在り方を世界に示す使命。大きな成功が他者のモデルとなる。"},
+  9:{title:"博愛と奉仕の使命",desc:"個人の利益を超えた人類全体への奉仕。芸術・教育・支援を通じて多くの魂に光をもたらす使命。"},
+  11:{title:"精神的インスピレーションを与える使命",desc:"高次のインスピレーションを人々に届け、精神的覚醒を導く使命。見えない世界と現実世界をつなぐ架け橋。"},
+  22:{title:"偉大なビジョンを実現する使命",desc:"世界規模のビジョンを現実に変える使命。多くの人の人生に長期的・根本的な変革をもたらす。"},
+  33:{title:"純粋な愛で人類を癒す使命",desc:"無条件の愛と深い知恵で人類の精神的進化を支える使命。その存在自体が癒しとなる。"},
+};
+
+const PERSONAL_YEAR_DETAIL = {
+  1:{title:"新しい始まり・種まきの年",keyword:"スタート / 決断 / 独立",desc:"9年サイクルの第1年目。新しいプロジェクト・仕事・関係のスタートに最適な年。今年蒔いた種が今後9年間の収穫を決める。大胆な決断と行動が吉。受け身は禁物。",good:"新規事業・引越し・転職・新しい出会い・チャレンジ",bad:"現状維持・優柔不断・過去への執着"},
+  2:{title:"忍耐・協力・待機の年",keyword:"協力 / 待機 / 感受性",desc:"種が芽吹くための準備期間。焦りは禁物で、コツコツと関係性を深め、協力を求める年。直感が鋭くなり、見えない流れを感じ取る力が高まる。パートナーシップが鍵。",good:"協力関係の構築・学習・計画の精緻化・感情の整理",bad:"性急な決断・独断・対立"},
+  3:{title:"表現・創造・拡張の年",keyword:"表現 / 楽しさ / 社交",desc:"明るく楽しいエネルギーが満ちる年。才能を表現し、人前に出て発信する絶好のタイミング。社交的な活動が実を結ぶ。喜びと創造性を中心に生きることで流れが良くなる。",good:"発信・作品発表・新しい人脈・旅行",bad:"内にこもる・否定的思考・自己制限"},
+  4:{title:"基盤作り・努力・忍耐の年",keyword:"堅実 / 努力 / 構築",desc:"地道な努力と建設的な作業が求められる年。派手さはないが、今年の積み重ねが将来の安定を作る。健康・財政・仕事の基盤を整えるのに最適。焦らず、着実に。",good:"健康管理・資産形成・スキルアップ・整理整頓・長期計画",bad:"サボり・浪費・逃避"},
+  5:{title:"変化・自由・冒険の年",keyword:"変化 / チャンス / 解放",desc:"大きな変化と予期せぬ出来事が多い刺激的な年。新しい経験・旅・出会いが人生を豊かにする。慣れ親しんだものを手放し、流れに乗ることが大切。変化を恐れず楽しむ姿勢が吉。",good:"転職・引越し・旅行・新しいスキル習得・冒険",bad:"変化への抵抗・同じ環境への固執"},
+  6:{title:"愛情・家族・責任の年",keyword:"愛 / 家庭 / 奉仕",desc:"人間関係・家族・愛情が中心となる年。結婚・出産・家族の問題解決が起きやすい。コミュニティへの奉仕や美的なものへの投資も吉。責任を果たすことで深い満足感を得られる。",good:"結婚・家族との時間・ホームメイキング・ボランティア",bad:"責任回避・人間関係の放棄"},
+  7:{title:"内省・学習・精神的成長の年",keyword:"内省 / 学び / 静寂",desc:"外向きの行動より、内側と向き合う年。深い学習・瞑想・自己探求に最適なタイミング。一人の時間が充電となり、精神的な洞察が深まる。今年は「待つ」ことが正解。",good:"学習・瞑想・自己分析・専門性の深化・スピリチュアルな探求",bad:"衝動的な行動・浅い判断・人間関係の強引な展開"},
+  8:{title:"収穫・達成・パワーの年",keyword:"成功 / 豊かさ / 影響力",desc:"これまでの努力の成果が現れる収穫の年。ビジネス・財政・キャリアで大きな前進が期待できる。自信を持って積極的に動くことが吉。お金・権力・影響力のテーマが前面に出る年。",good:"昇進・起業・投資・大きな決断・財政的前進",bad:"臆病・チャンスの見逃し・過度な倹約"},
+  9:{title:"完了・手放し・浄化の年",keyword:"終わり / 手放し / 感謝",desc:"9年サイクルの最後の年。古いもの・合わなくなった関係・過去への執着を手放す年。大きな変化・別れ・終わりが訪れることもあるが、それは次の新サイクルへの準備。感謝と手放しが鍵。",good:"断捨離・関係の整理・過去の清算・感謝の実践・完了",bad:"新しいことを始める・執着・引き延ばし"},
+  11:{title:"インスピレーションと覚醒の年（マスター）",keyword:"直感 / 啓示 / 精神的飛躍",desc:"強烈な直感・同期現象・精神的覚醒が起こりやすい特別な年。高次のインスピレーションを受け取り、それを形にする年。感受性が極めて高まる。",good:"精神的探求・創造・インスピレーションを活かした行動",bad:"理想と現実の乖離・神経過敏・過度な完璧主義"},
+  22:{title:"偉大な達成の年（マスター）",keyword:"大規模な建設 / ビジョン実現",desc:"壮大なビジョンを現実化する力が最大になる特別な年。大きなプロジェクト・社会的使命の実行に最適。ただしプレッシャーも相応に大きくなる。",good:"大きなビジョンの実行・組織構築・社会的影響力の行使",bad:"過度なプレッシャー・完璧主義・燃え尽き"},
+  33:{title:"愛と奉仕の年（マスター）",keyword:"無条件の愛 / 癒し / 使命",desc:"純粋な愛と奉仕が最大テーマとなる特別な年。癒しの力が高まり、多くの人を助けることで魂が輝く。自己犠牲との境界線を保つことが重要。",good:"奉仕・癒し・愛情の表現・精神的指導",bad:"自己犠牲の過剰・自分のニーズの無視"},
+};
+
+const ATTITUDE_DETAIL = {
+  1:{title:"積極的・リーダー的な第一印象",desc:"初対面では自信に満ちたリーダー的な雰囲気を放つ。物怖じしない姿勢が印象的で、頼りになる存在に見える。"},
+  2:{title:"穏やか・協調的な第一印象",desc:"初対面では温かく穏やかな人という印象を与える。親しみやすく、すぐに打ち解けられる雰囲気がある。"},
+  3:{title:"明るく社交的な第一印象",desc:"初対面でも笑顔で楽しそうな雰囲気。会話が自然に弾み、周囲を明るくする。"},
+  4:{title:"真面目・誠実な第一印象",desc:"初対面では真剣で責任感のある印象。信頼できそうと直感的に思われる。"},
+  5:{title:"エネルギッシュ・自由奔放な第一印象",desc:"初対面でも活き活きとしたエネルギーが伝わる。面白そうな人という印象を与える。"},
+  6:{title:"優しく温かい第一印象",desc:"初対面から包容力と優しさが滲み出る。安心感を与え、自然と人を引き寄せる。"},
+  7:{title:"知的・神秘的な第一印象",desc:"初対面では少し謎めいた知的なオーラ。近寄りがたいが、それが独特の魅力となる。"},
+  8:{title:"パワフル・有能な第一印象",desc:"初対面でも圧倒的な存在感を放つ。「できる人」という印象を自然に与える。"},
+  9:{title:"品格・寛大な第一印象",desc:"初対面から品のある大人の雰囲気。懐が深く、誰でも受け入れてくれそうな印象。"},
+  11:{title:"カリスマ的・神秘的な第一印象（マスター）",desc:"初対面で普通ではない特別なオーラを感じさせる。強い引力と神秘性がある。"},
+  22:{title:"威厳ある・スケールの大きな第一印象（マスター）",desc:"初対面から大物感と信頼感が漂う。スケールの大きさが自然と伝わる。"},
+};
+
+const MATURITY_DETAIL = {
+  1:{title:"晩年は独立と自己完結の時代",desc:"40代以降、自分自身に完全に立ち戻り、真の独立と自己実現を体験する時期が訪れる。他者への依存を手放し、自分の力で生きる喜びを知る。"},
+  2:{title:"晩年は深い愛と調和の時代",desc:"40代以降、深い人間関係と魂レベルの愛を体験する。孤独より繋がりに豊かさを見出す時期。"},
+  3:{title:"晩年は表現と喜びの解放の時代",desc:"40代以降、自己表現が一段と豊かになり、創造と喜びに満ちた人生を体験する。"},
+  4:{title:"晩年は安定と完成の時代",desc:"40代以降、これまでの積み重ねが実を結び、確固たる基盤の上に人生の完成形が現れる。"},
+  5:{title:"晩年は自由と解放の時代",desc:"40代以降、束縛を手放し真の自由を体験する。冒険と変化の中に深い豊かさを見出す。"},
+  6:{title:"晩年は愛と奉仕の深化の時代",desc:"40代以降、愛と奉仕の意味が深まり、家族・コミュニティへの貢献に真の喜びを見出す。"},
+  7:{title:"晩年は精神的叡智の時代",desc:"40代以降、深い精神的洞察と知恵を得る時期。内なる真実が輝きを増す。"},
+  8:{title:"晩年は豊かさと影響力の時代",desc:"40代以降、物質的・精神的な豊かさが結実し、大きな影響力を持つ時期を迎える。"},
+  9:{title:"晩年は完成と解放の時代",desc:"40代以降、執着を手放し、すべてを受け入れる境地へ。博愛と完成の喜びを体験する。"},
+  11:{title:"晩年は高次の使命の開花（マスター）",desc:"40代以降、スピリチュアルな使命が最大限に開花し、精神的指導者として輝く時期。"},
+  22:{title:"晩年は偉大な建設の集大成（マスター）",desc:"40代以降、生涯をかけたビジョンが現実となり、社会に大きな遺産を残す時期を迎える。"},
+  33:{title:"晩年は宇宙的愛の体現（マスター）",desc:"40代以降、純粋な愛と慈悲が最大限に開花し、多くの魂を癒す存在として輝く。"},
+};
+
+const C = {bg:"#0a0a0f",card:"#12121a",border:"#2a2a3a",accent:"#c9a96e",accent2:"#7c5cbf",text:"#e8e0d0",muted:"#888899",gold:"#d4af37",purple:"#9b59b6"};
+
+function getMeaning(type, num) {
+  const maps = {lifePath:LIFE_PATH,birthday:BIRTHDAY_DETAIL,soul:SOUL_DETAIL,personality:PERSONALITY_DETAIL,destiny:DESTINY_DETAIL,personalYear:PERSONAL_YEAR_DETAIL,attitude:ATTITUDE_DETAIL,maturity:MATURITY_DETAIL};
+  return maps[type]?.[num] || maps[type]?.[reduceNumber(num)] || null;
+}
+
+const Tag = ({label, value, color}) => (
+  <div style={{background:`${color}15`,border:`1px solid ${color}40`,borderRadius:6,padding:"3px 8px",marginBottom:4}}>
+    <span style={{fontSize:10,color,fontWeight:700,marginRight:4}}>{label}:</span>
+    <span style={{fontSize:11,color:C.text}}>{value}</span>
+  </div>
+);
+
+const NumberCard = ({label, number, raw, detail, color=C.accent, icon="◆"}) => {
+  const [open, setOpen] = useState(false);
+  const d = detail;
+  const renderContent = () => {
+    if(!d) return <div style={{fontSize:13,color:C.muted}}>データなし</div>;
+    if(typeof d==="string") return <div style={{fontSize:13,color:C.text,lineHeight:1.8}}>{d}</div>;
+    return (
+      <div>
+        {d.keyword && (
+          <div style={{marginBottom:8}}>
+            {d.keyword.split(" / ").map((k,i)=>(
+              <span key={i} style={{display:"inline-block",background:`${color}18`,border:`1px solid ${color}40`,borderRadius:20,padding:"2px 10px",marginRight:4,marginBottom:4,fontSize:10,color}}>{k}</span>
+            ))}
+          </div>
+        )}
+        {d.title && <div style={{fontSize:14,color,fontWeight:700,marginBottom:8}}>{d.title}</div>}
+        {d.desc && <div style={{fontSize:12,color:C.text,lineHeight:1.9,marginBottom:8}}>{d.desc}</div>}
+        <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:6}}>
+          {d.strength && <Tag label="強み" value={d.strength} color={C.accent}/>}
+          {d.talent && <Tag label="才能" value={d.talent} color={C.accent}/>}
+          {d.shadow && <Tag label="課題" value={d.shadow} color="#e07070"/>}
+          {d.career && <Tag label="適職" value={d.career} color={C.accent2}/>}
+          {d.good && <Tag label="向いている行動" value={d.good} color="#70e0a0"/>}
+          {d.bad && <Tag label="避けたほうがいい行動" value={d.bad} color="#e07070"/>}
+        </div>
+        {(d.love||d.money||d.growth) && (
+          <button onClick={()=>setOpen(o=>!o)} style={{marginTop:6,padding:"6px 14px",background:"transparent",border:`1px solid ${color}50`,borderRadius:20,color,fontSize:11,cursor:"pointer",letterSpacing:1,fontFamily:"inherit"}}>
+            {open ? "▲ 閉じる" : "▼ 愛・お金・成長テーマ"}
+          </button>
+        )}
+        {open && (
+          <div style={{marginTop:10}}>
+            {d.love && <div style={{marginBottom:10,padding:12,background:"#e0707018",borderRadius:10,borderLeft:`3px solid #e07070`}}><div style={{fontSize:10,color:"#e07070",fontWeight:700,marginBottom:4}}>❤ 愛とパートナーシップ</div><div style={{fontSize:12,color:C.text,lineHeight:1.8}}>{d.love}</div></div>}
+            {d.money && <div style={{marginBottom:10,padding:12,background:`${C.gold}18`,borderRadius:10,borderLeft:`3px solid ${C.gold}`}}><div style={{fontSize:10,color:C.gold,fontWeight:700,marginBottom:4}}>💰 お金と財</div><div style={{fontSize:12,color:C.text,lineHeight:1.8}}>{d.money}</div></div>}
+            {d.growth && <div style={{padding:12,background:"#70e0a018",borderRadius:10,borderLeft:"3px solid #70e0a0"}}><div style={{fontSize:10,color:"#70e0a0",fontWeight:700,marginBottom:4}}>🌱 成長のテーマ</div><div style={{fontSize:12,color:C.text,lineHeight:1.8}}>{d.growth}</div></div>}
+          </div>
+        )}
+      </div>
+    );
+  };
+  return (
+    <div style={{background:`linear-gradient(135deg,${C.card} 0%,#1a1a28 100%)`,border:`1px solid ${color}40`,borderRadius:16,padding:"20px 22px",marginBottom:14,position:"relative",overflow:"hidden"}}>
+      <div style={{position:"absolute",top:-20,right:-20,fontSize:80,opacity:0.04,color,fontFamily:"serif",lineHeight:1}}>{number}</div>
+      <div style={{display:"flex",alignItems:"flex-start",gap:14}}>
+        <div style={{minWidth:56,height:56,borderRadius:12,background:`${color}18`,border:`1.5px solid ${color}50`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+          <div style={{fontSize:11,color:C.muted}}>{icon}</div>
+          <div style={{fontSize:22,fontWeight:700,color,fontFamily:"Georgia, serif",lineHeight:1.1}}>{number}</div>
+          {raw && raw!==number && <div style={{fontSize:9,color:C.muted}}>({raw})</div>}
+        </div>
+        <div style={{flex:1}}>
+          <div style={{fontSize:10,color:C.muted,letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>{label}</div>
+          {renderContent()}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const CycleYearCard = ({yr, n, isCurrent}) => {
+  const [open, setOpen] = useState(false);
+  const d = getMeaning("personalYear", n);
+  return (
+    <div style={{background:isCurrent?`${C.accent}12`:"#0d0d17",border:`1px solid ${isCurrent?C.accent:C.border}`,borderRadius:12,padding:"12px 14px",marginBottom:8}}>
+      <div style={{display:"flex",alignItems:"center",gap:12,cursor:d?"pointer":"default"}} onClick={()=>d&&setOpen(o=>!o)}>
+        <div style={{textAlign:"center",minWidth:48}}>
+          <div style={{fontSize:10,color:C.muted}}>{yr}</div>
+          <div style={{fontSize:26,fontWeight:700,color:isCurrent?C.accent:C.text,fontFamily:"Georgia, serif",lineHeight:1.1}}>{n}</div>
+          {isCurrent && <div style={{fontSize:9,color:C.accent,letterSpacing:1}}>今年</div>}
+        </div>
+        <div style={{flex:1}}>
+          {d ? (
+            <>
+              <div style={{fontSize:12,color:isCurrent?C.accent:C.text,fontWeight:600,marginBottom:2}}>{d.title}</div>
+              <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+                {d.keyword && d.keyword.split(" / ").map((k,i)=>(
+                  <span key={i} style={{fontSize:9,color:C.muted,background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:"1px 6px"}}>{k}</span>
+                ))}
+              </div>
+            </>
+          ) : <div style={{fontSize:11,color:C.muted}}>—</div>}
+        </div>
+        {d && <div style={{fontSize:12,color:C.muted,flexShrink:0}}>{open?"▲":"▼"}</div>}
+      </div>
+      {open && d && (
+        <div style={{marginTop:12,borderTop:`1px solid ${C.border}`,paddingTop:12}}>
+          <div style={{fontSize:12,color:C.text,lineHeight:1.9,marginBottom:10}}>{d.desc}</div>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            {d.good && <div style={{flex:1,minWidth:140,padding:10,background:"#70e0a018",borderRadius:8,borderLeft:"3px solid #70e0a0"}}>
+              <div style={{fontSize:10,color:"#70e0a0",fontWeight:700,marginBottom:4}}>✅ 向いている行動</div>
+              <div style={{fontSize:11,color:C.text,lineHeight:1.7}}>{d.good}</div>
+            </div>}
+            {d.bad && <div style={{flex:1,minWidth:140,padding:10,background:"#e0707018",borderRadius:8,borderLeft:"3px solid #e07070"}}>
+              <div style={{fontSize:10,color:"#e07070",fontWeight:700,marginBottom:4}}>⚠ 避けたほうがいい</div>
+              <div style={{fontSize:11,color:C.text,lineHeight:1.7}}>{d.bad}</div>
+            </div>}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default function NumerologyTool() {
+  const [dob, setDob] = useState("");
+  const [name, setName] = useState("");
+  const [result, setResult] = useState(null);
+  const [activeTab, setActiveTab] = useState("core");
+
+  function calculate() {
+    const digits = dob.replace(/\D/g,"");
+    if(digits.length!==8){alert("生年月日を正しく入力してください（例：19960410）");return;}
+    const currentYear = new Date().getFullYear();
+    const lp = calcLifePath(dob);
+    const bd = calcBirthday(dob);
+    const ds = name ? calcDestiny(name) : null;
+    const sl = name ? calcSoul(name) : null;
+    const pe = name ? calcPersonality(name) : null;
+    const mt = (lp&&ds) ? calcMaturity(lp,ds) : null;
+    const py = calcPersonalYear(dob, currentYear);
+    const at = calcAttitude(dob);
+    setResult({lp,bd,ds,sl,pe,mt,py,at,currentYear});
+    setActiveTab("core");
+  }
+
+  const tabs = [{id:"core",label:"コア数字"},{id:"name",label:"名前数字"},{id:"cycle",label:"サイクル"}];
+
+  return (
+    <div style={{minHeight:"100vh",background:C.bg,color:C.text,fontFamily:"'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif",paddingBottom:60}}>
+      <div style={{background:"linear-gradient(180deg,#1a1228 0%,#0a0a0f 100%)",borderBottom:`1px solid ${C.border}`,padding:"36px 20px 28px",textAlign:"center",position:"relative",overflow:"hidden"}}>
+        <div style={{position:"absolute",inset:0,background:"radial-gradient(ellipse at 50% 0%,#7c5cbf20 0%,transparent 70%)"}}/>
+        <div style={{fontSize:30,marginBottom:8,position:"relative"}}>✦ 数秘術鑑定 ✦</div>
+        <div style={{fontSize:12,color:C.muted,letterSpacing:3,position:"relative"}}>NUMEROLOGY READING</div>
+      </div>
+
+      <div style={{maxWidth:620,margin:"0 auto",padding:"28px 16px 0"}}>
+        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:18,padding:"24px 20px",marginBottom:20}}>
+          <div style={{marginBottom:16}}>
+            <label style={{display:"block",fontSize:11,color:C.muted,letterSpacing:2,marginBottom:8}}>生年月日（8桁）</label>
+            <input value={dob} onChange={e=>setDob(e.target.value.replace(/\D/g,"").slice(0,8))} placeholder="例：19960410"
+              style={{width:"100%",padding:"13px 16px",background:"#0d0d17",border:`1.5px solid ${dob.length===8?C.accent:C.border}`,borderRadius:10,color:C.text,fontSize:16,outline:"none",boxSizing:"border-box",fontFamily:"inherit",letterSpacing:4,transition:"border-color 0.3s"}}/>
+          </div>
+          <div style={{marginBottom:20}}>
+            <label style={{display:"block",fontSize:11,color:C.muted,letterSpacing:2,marginBottom:8}}>名前（ローマ字・任意）</label>
+            <input value={name} onChange={e=>setName(e.target.value.replace(/[^a-zA-Z\s]/g,""))} placeholder="例：YUKI TANAKA"
+              style={{width:"100%",padding:"13px 16px",background:"#0d0d17",border:`1.5px solid ${name?C.accent2:C.border}`,borderRadius:10,color:C.text,fontSize:16,outline:"none",boxSizing:"border-box",fontFamily:"inherit",transition:"border-color 0.3s"}}/>
+            <div style={{fontSize:11,color:C.muted,marginTop:6}}>※名前入力でソウル・パーソナリティ・ディスティニー・マチュリティナンバーも算出されます</div>
+          </div>
+          <button onClick={calculate} style={{width:"100%",padding:"15px",background:`linear-gradient(135deg,${C.accent2} 0%,${C.accent} 100%)`,border:"none",borderRadius:12,color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer",letterSpacing:3,fontFamily:"inherit",boxShadow:"0 4px 20px #7c5cbf40"}}>
+            ✦ 鑑定する ✦
+          </button>
+        </div>
+
+        {result && (
+          <>
+            <div style={{display:"flex",gap:8,marginBottom:20,background:C.card,padding:6,borderRadius:14,border:`1px solid ${C.border}`}}>
+              {tabs.map(t=>(
+                <button key={t.id} onClick={()=>setActiveTab(t.id)} style={{flex:1,padding:"10px 0",background:activeTab===t.id?`linear-gradient(135deg,${C.accent2} 0%,${C.accent} 100%)`:"transparent",border:"none",borderRadius:10,color:activeTab===t.id?"#fff":C.muted,fontSize:13,fontWeight:activeTab===t.id?700:400,cursor:"pointer",transition:"all 0.3s",fontFamily:"inherit"}}>
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
+            {activeTab==="core" && (
+              <div>
+                <NumberCard label="ライフパスナンバー（運命数）" number={result.lp.reduced} raw={result.lp.raw} detail={getMeaning("lifePath",result.lp.reduced)} color={C.gold} icon="★"/>
+                <NumberCard label="バースデーナンバー（才能数）" number={result.bd.reduced} raw={result.bd.raw} detail={getMeaning("birthday",result.bd.raw)||getMeaning("birthday",result.bd.reduced)} color={C.accent} icon="◈"/>
+                {result.mt && <NumberCard label="マチュリティナンバー（成熟数・晩年のテーマ）" number={result.mt.reduced} raw={result.mt.raw} detail={getMeaning("maturity",result.mt.reduced)} color="#70b8e0" icon="◎"/>}
+              </div>
+            )}
+
+            {activeTab==="name" && (
+              <div>
+                {result.ds ? (
+                  <>
+                    <NumberCard label="ディスティニーナンバー（使命数）" number={result.ds.reduced} raw={result.ds.raw} detail={getMeaning("destiny",result.ds.reduced)} color={C.purple} icon="◇"/>
+                    <NumberCard label="ソウルナンバー（魂の欲求）" number={result.sl?.reduced} raw={result.sl?.raw} detail={getMeaning("soul",result.sl?.reduced)} color="#e07070" icon="♡"/>
+                    <NumberCard label="パーソナリティナンバー（外側の印象）" number={result.pe?.reduced} raw={result.pe?.raw} detail={getMeaning("personality",result.pe?.reduced)} color="#70e0b0" icon="◉"/>
+                  </>
+                ) : (
+                  <div style={{textAlign:"center",padding:"60px 20px",color:C.muted,fontSize:14,lineHeight:2}}>
+                    <div style={{fontSize:36,marginBottom:16}}>✦</div>
+                    名前（ローマ字）を入力すると<br/>ディスティニー・ソウル・<br/>パーソナリティナンバーが<br/>算出されます
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab==="cycle" && (
+              <div>
+                <NumberCard label={`パーソナルイヤーナンバー（${result.currentYear}年のテーマ）`} number={result.py.reduced} raw={result.py.raw} detail={getMeaning("personalYear",result.py.reduced)} color="#e0b870" icon="◑"/>
+                <NumberCard label="アティテュードナンバー（初対面の印象）" number={result.at.reduced} raw={result.at.raw} detail={getMeaning("attitude",result.at.reduced)} color="#b0d070" icon="◐"/>
+                <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:"20px",marginBottom:14}}>
+                  <div style={{fontSize:11,color:C.muted,letterSpacing:2,marginBottom:4}}>9年サイクル（前後の流れ）</div>
+                  <div style={{fontSize:10,color:C.muted,marginBottom:14}}>各年をタップするとテーマ・向いている行動を表示します</div>
+                  {[-2,-1,0,1,2,3,4,5,6].map(offset=>{
+                    const yr = result.currentYear + offset;
+                    const digits = dob.replace(/\D/g,"");
+                    const mmdd = digits.slice(4,8);
+                    const total = sumDigits(mmdd)+sumDigits(String(yr));
+                    const n = reduceNumber(total);
+                    return <CycleYearCard key={yr} yr={yr} n={n} isCurrent={offset===0}/>;
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div style={{textAlign:"center",padding:"16px 0",fontSize:11,color:C.muted,lineHeight:2}}>
+              ✦ ピタゴラス数秘術に基づいています ✦<br/>マスターナンバー 11・22・33 は縮約しません
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
